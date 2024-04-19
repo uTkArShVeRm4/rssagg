@@ -10,6 +10,17 @@ import (
 	"github.com/utkarshverm4/rssagg/internal/database"
 )
 
+func (apiCfg *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
+
+	feeds, err := apiCfg.DB.GetFeeds(r.Context())
+	if err != nil {
+		respondWithErr(w, 400, fmt.Sprintf("Couldn't get feeds: %v", err))
+	}
+
+	respondWithJSON(w, 200, databaseFeedsToFeeds(feeds))
+
+}
+
 func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user database.User) {
 	type parameters struct {
 		Name string `json:"name"`
