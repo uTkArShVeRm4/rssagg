@@ -2,10 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -19,8 +19,6 @@ type apiConfig struct {
 }
 
 func main() {
-	fmt.Println("hello world")
-
 	godotenv.Load(".env")
 
 	portString := os.Getenv("PORT")
@@ -40,8 +38,12 @@ func main() {
 		log.Fatal("Couldn't connect to postgres")
 	}
 
+	db := database.New(conn)
+
+	go startScraping(db, 10, time.Minute)
+
 	apiCfg := apiConfig{
-		DB: database.New(conn),
+		DB: db,
 	}
 
 	router := chi.NewRouter()
@@ -61,6 +63,8 @@ func main() {
 	v1Router.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerGetUser))
 	v1Router.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerCreateFeed))
 	v1Router.Get("/feeds", apiCfg.handlerGetFeeds)
+
+	v1Router.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostsForUser))
 
 	v1Router.Post("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerCreateFeedFollow))
 	v1Router.Get("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollows))
